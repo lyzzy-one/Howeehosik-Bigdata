@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:data.seoul.go.kr)",
+      "WebFetch(domain:www.data.go.kr)",
+      "WebFetch(domain:www.bigdata-policing.kr)",
+      "PowerShell($url = \"https://file.localdata.go.kr/file/cctv_info/info\"; try { $resp = Invoke-WebRequest -Uri $url -Method Head -ErrorAction Stop; Write-Output \"Status: $\\($resp.StatusCode\\)\"; $resp.Headers | Format-List } catch { Write-Output \"Error: $\\($_.Exception.Message\\)\" })",
+      "PowerShell($url = \"https://file.localdata.go.kr/file/cctv_info/info\"; $headers = @{ \"User-Agent\" = \"Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\" }; try { $resp = Invoke-WebRequest -Uri $url -Headers $headers -Method Get -MaximumRedirection 10 -ErrorAction Stop; Write-Output \"Status: $\\($resp.StatusCode\\)\"; Write-Output \"Final URL: $\\($resp.BaseResponse.ResponseUri\\)\"; Write-Output \"Content-Type: $\\($resp.Headers['Content-Type']\\)\"; Write-Output \"Content-Length: $\\($resp.Headers['Content-Length']\\)\"; Write-Output \"Content-Disposition: $\\($resp.Headers['Content-Disposition']\\)\" } catch { Write-Output \"Error: $\\($_.Exception.Message\\)\"; if \\($_.Exception.Response\\) { Write-Output \"Status code: $\\($_.Exception.Response.StatusCode\\)\" } })",
+      "PowerShell($urls = @\\(\"https://www.localdata.go.kr/data/dataView.do?opnSvcId=00CCTV\", \"https://file.localdata.go.kr/file/cctv_info/info.csv\", \"https://file.localdata.go.kr/cctv_info.csv\"\\); $headers = @{ \"User-Agent\" = \"Mozilla/5.0 \\(Windows NT 10.0; Win64; x64\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0.0.0 Safari/537.36\"; \"Referer\" = \"https://www.data.go.kr/\" }; foreach \\($u in $urls\\) { Write-Output \"--- $u\"; try { $resp = Invoke-WebRequest -Uri $u -Headers $headers -Method Head -ErrorAction Stop; Write-Output \"OK Status: $\\($resp.StatusCode\\), Content-Type: $\\($resp.Headers['Content-Type']\\)\" } catch { Write-Output \"Error: $\\($_.Exception.Message\\)\" } })",
+      "PowerShell(python --version; python -c \"import pandas, geopandas, shapely, openpyxl; print\\('pandas:', pandas.__version__\\); print\\('geopandas:', geopandas.__version__\\); print\\('shapely:', shapely.__version__\\); print\\('openpyxl:', openpyxl.__version__\\)\" 2>&1)",
+      "PowerShell(python \"C:\\\\Users\\\\pjhic\\\\Projects\\\\Seoul_bigdata\\\\notebooks\\\\_probe.py\" 2>&1 | Select-Object -First 200)",
+      "PowerShell(jupyter nbconvert *)",
+      "PowerShell(python -c \"import nbformat; nb = nbformat.read\\(r'C:\\\\Users\\\\pjhic\\\\Projects\\\\Seoul_bigdata\\\\notebooks\\\\01_data_verification.ipynb', as_version=4\\); errors = [c for c in nb.cells if c.cell_type=='code' and any\\(o.output_type=='error' for o in c.get\\('outputs',[]\\)\\)]; print\\(f'에러 셀: {len\\(errors\\)}/{len\\([c for c in nb.cells if c.cell_type==\\\\\"code\\\\\"]\\)}'\\); [print\\('---', i, c.source[:100], '...\\\\n', [o.ename + \\\\\": \\\\\" + o.evalue for o in c.outputs if o.output_type==\\\\\"error\\\\\"]\\) for i,c in enumerate\\(errors\\)]\")",
+      "PowerShell($env:PYTHONIOENCODING=\"utf-8\"; python \"C:\\\\Users\\\\pjhic\\\\Projects\\\\Seoul_bigdata\\\\notebooks\\\\_probe.py\" 2>&1)",
+      "PowerShell(python -c \"import pyarrow, scipy, pickle; print\\('pyarrow:', pyarrow.__version__\\); print\\('scipy:', scipy.__version__\\); print\\('pickle: OK'\\)\")",
+      "PowerShell($env:PYTHONIOENCODING=\"utf-8\"; python \"C:\\\\Users\\\\pjhic\\\\Projects\\\\Seoul_bigdata\\\\notebooks\\\\_check.py\" 2>&1 | Select-Object -First 250)",
+      "PowerShell(Remove-Item *)",
+      "PowerShell(python -c \"import dotenv, requests; print\\('dotenv:', dotenv.__version__\\); print\\('requests:', requests.__version__\\)\" 2>&1)",
+      "PowerShell(python -c \"from dotenv import load_dotenv; import requests; print\\('dotenv: OK'\\); print\\('requests:', requests.__version__\\)\" 2>&1)",
+      "PowerShell($env:PYTHONIOENCODING=\"utf-8\"; python -c \"import sys; sys.path.insert\\(0, r'C:\\\\Users\\\\pjhic\\\\Projects\\\\Seoul_bigdata\\\\src'\\); import search; print\\('search 모듈 import OK'\\); print\\('함수:', [x for x in dir\\(search\\) if not x.startswith\\('_'\\) and callable\\(getattr\\(search, x\\)\\)]\\); print\\('API 키 설정 여부:', bool\\(search.KAKAO_KEY\\)\\)\" 2>&1)",
+      "PowerShell($env:PYTHONIOENCODING=\"utf-8\"; python \"C:\\\\Users\\\\pjhic\\\\Projects\\\\Seoul_bigdata\\\\notebooks\\\\_check.py\" 2>&1 | Select-Object -First 350)",
+      "PowerShell(python -c \"from openai import OpenAI; import openai; print\\('openai:', openai.__version__\\)\" 2>&1)",
+      "PowerShell(npm *)",
+      "PowerShell(New-Item *)",
+      "Bash(curl -s http://localhost:8000/api/health)",
+      "Bash(curl -s -X POST http://localhost:8000/api/analyze-coord -H \"Content-Type: application/json\" -d '{\"lat\": 37.5559, \"lon\": 126.9367, \"priority\": \"balanced\"}')",
+      "Bash(python -m json.tool)",
+      "Bash(curl -s http://localhost:3000 -o /dev/null)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://localhost:3000)",
+      "Bash(curl -s http://localhost:3000)",
+      "Bash(curl -s -X POST http://localhost:8000/api/analyze-coord -H \"Content-Type: application/json\" -d '{\"lat\": 37.5384, \"lon\": 127.1239, \"priority\": \"balanced\"}')",
+      "Bash(python -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(f'주소: {d[\\\\\"address\\\\\"]}'\\); print\\(f'종합: {d[\\\\\"total_score\\\\\"]}점 \\({d[\\\\\"grade\\\\\"]}\\)'\\); print\\(f'요약: {d[\\\\\"one_line_summary\\\\\"]}'\\); print\\(\\); [print\\(f'  {c[\\\\\"name\\\\\"]:<14} {c[\\\\\"score\\\\\"]:>3}점' if c.get\\('active'\\) else f'  {c[\\\\\"name\\\\\"]:<14} \\(미적용\\)'\\) for c in d['category_scores'].values\\(\\)]; print\\(\\); print\\('AI 리포트:'\\); print\\(d['ai_report'][:200] + '...'\\)\")",
+      "Bash(python *)",
+      "Bash(curl -s -X POST http://localhost:8000/api/compare -H 'Content-Type: application/json' -d '{\"candidates\":[{\"label\":\"신촌역\",\"lat\":37.5559,\"lon\":126.9367},{\"label\":\"강남역\",\"lat\":37.4979,\"lon\":127.0276},{\"label\":\"잠실역\",\"lat\":37.5133,\"lon\":127.10}],\"priority\":\"balanced\"}')",
+      "Bash(npm run *)",
+      "Bash(curl -s \"http://localhost:3000\" -o /dev/null)"
+    ]
+  }
+}
