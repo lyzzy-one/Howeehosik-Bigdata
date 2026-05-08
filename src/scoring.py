@@ -4,9 +4,17 @@
 설계 원칙:
 - 거리 기반 + 밀도 기반 점수의 가중 결합 (60:40)
 - 데이터 적은 자치구도 거리 기반 신호로 0점 회피
-- 6개 항목 중 4개(cctv/light/bell/policy) 활성, 2개(귀가/시간환경)는 placeholder
+- 5개 활성 카테고리: surveillance/lighting/emergency/safe_policy/route_access
+- 1개 비활성 카테고리: env (시간·환경 보정)
 - 가중치는 priority 옵션에 따라 동적 조정
 - 모든 점수에 evidence(raw 신호) 동봉 → Day 5 AI 리포트의 근거
+
+카테고리 가중치 (인프라 중시):
+- surveillance: 30% (감시 인프라)
+- lighting:     30% (야간 조명)
+- emergency:    20% (긴급 대응)
+- safe_policy:  10% (안심정책 - 시설물)
+- route_access: 10% (귀가 접근성 - 안심귀갓길 경로)
 
 LLM 안전성:
 - recommended_action은 'ai_report_safety_rules.md'의 권장 표현만 사용
@@ -25,24 +33,22 @@ CATEGORIES = {
     'surveillance':  '감시 인프라',
     'lighting':      '야간 조명',
     'emergency':     '긴급 대응',
-    'policy':        '정책 접근성',
-    'transport':     '귀가 접근성',
+    'safe_policy':   '안심정책 접근성',
+    'route_access':  '귀가 접근성',
     'env':           '시간·환경 보정',
 }
 
-ACTIVE_CATEGORIES = ['surveillance', 'lighting', 'emergency', 'policy']
+ACTIVE_CATEGORIES = ['surveillance', 'lighting', 'emergency', 'safe_policy', 'route_access']
 INACTIVE_CATEGORIES = {
-    'transport': 'MVP 미적용 — 정류장 데이터 추가 시 활성화 예정',
-    'env':       'MVP 미적용 — 생활인구·기상·일몰 데이터 추가 시 활성화 예정',
+    'env': 'MVP 미적용 — 생활인구·기상·일몰 데이터 추가 시 활성화 예정',
 }
 
-# priority별 가중치 — 활성 4개 카테고리 합 = 1.0
+# priority별 가중치 — 활성 5개 카테고리 합 = 1.0 (인프라 중시)
 PRIORITY_WEIGHTS: dict[str, dict[str, float]] = {
-    'balanced':       {'surveillance': 0.30, 'lighting': 0.25, 'emergency': 0.25, 'policy': 0.20},
-    'cctv':           {'surveillance': 0.45, 'lighting': 0.20, 'emergency': 0.20, 'policy': 0.15},
-    'lighting':       {'surveillance': 0.20, 'lighting': 0.45, 'emergency': 0.20, 'policy': 0.15},
-    'emergency':      {'surveillance': 0.20, 'lighting': 0.20, 'emergency': 0.45, 'policy': 0.15},
-    'transport':      {'surveillance': 0.30, 'lighting': 0.25, 'emergency': 0.25, 'policy': 0.20},  # alias
+    'balanced':  {'surveillance': 0.30, 'lighting': 0.30, 'emergency': 0.20, 'safe_policy': 0.10, 'route_access': 0.10},
+    'cctv':      {'surveillance': 0.40, 'lighting': 0.25, 'emergency': 0.15, 'safe_policy': 0.10, 'route_access': 0.10},
+    'lighting':  {'surveillance': 0.25, 'lighting': 0.40, 'emergency': 0.15, 'safe_policy': 0.10, 'route_access': 0.10},
+    'emergency': {'surveillance': 0.25, 'lighting': 0.25, 'emergency': 0.30, 'safe_policy': 0.10, 'route_access': 0.10},
 }
 
 
@@ -77,10 +83,11 @@ def _density_score(count: int, bands: list[tuple[int, int]]) -> int:
 
 # 카테고리별 density 밴드 (관찰된 분포 기반)
 _DENSITY_BANDS = {
-    'surveillance': [(0, 15), (1, 40), (4, 60), (10, 80), (20, 100)],   # CCTV @ 300m
-    'lighting':     [(0, 15), (1, 40), (4, 60), (10, 80), (20, 100)],   # light @ 100m
-    'emergency':    [(0, 15), (1, 50), (3, 75), (6, 100)],              # bell @ 300m
-    'policy':       [(0, 20), (1, 60), (2, 80), (3, 100)],              # safe_route within 500m
+    'surveillance':  [(0, 15), (1, 40), (4, 60), (10, 80), (20, 100)],  # CCTV @ 300m
+    'lighting':      [(0, 15), (1, 40), (4, 60), (10, 80), (20, 100)],  # light @ 100m
+    'emergency':     [(0, 15), (1, 50), (3, 75), (6, 100)],             # bell @ 300m
+    'safe_policy':   [(0, 15), (1, 50), (3, 75), (5, 100)],             # facility @ 300m
+    'route_access':  [(0, 20), (1, 60), (2, 80), (3, 100)],             # safe_route within 500m
 }
 
 
@@ -150,33 +157,59 @@ def _score_emergency(signal: dict) -> dict:
     }
 
 
-def _score_policy(signal: dict) -> dict:
-    """정책 접근성 점수 (안심귀갓길 경로 + 시설물)."""
+def _score_safe_policy(signal: dict) -> dict:
+    """안심정책 접근성 점수 (안심귀갓길 시설물)."""
+    facility_count_300m = signal['radii'][300]['by_type']['facility']
+    facility_count_500m = signal['radii'][500]['by_type']['facility']
+
+    # 시설물은 거리 기반 점수 대신 밀도만 사용 (시설물별 최근접 거리 데이터 없음)
+    # 밀도 점수를 주로 사용하되, 존재 여부로 거리 점수 대체
+    if facility_count_300m >= 1:
+        d_score = 80  # 300m 내 존재
+    elif facility_count_500m >= 1:
+        d_score = 50  # 500m 내 존재
+    else:
+        d_score = 15  # 없음
+
+    den_score = _density_score(facility_count_300m, _DENSITY_BANDS['safe_policy'])
+    return {
+        'score': _blend(d_score, den_score),
+        'components': {'distance_score': d_score, 'density_score': den_score},
+        'evidence': {
+            'facility_count_300m': facility_count_300m,
+            'facility_count_500m': facility_count_500m,
+        },
+    }
+
+
+def _score_route_access(signal: dict) -> dict:
+    """귀가 접근성 점수 (안심귀갓길 경로)."""
     route = signal['nearest_safe_route']
     nearest_m = route['distance_m']
+    routes_within_300m = route['within_300m_count']
     routes_within_500m = route['within_500m_count']
-    facility_count_300m = signal['radii'][300]['by_type']['facility']
 
     d_score = _distance_score(nearest_m)
-    den_score = _density_score(routes_within_500m, _DENSITY_BANDS['policy'])
+    den_score = _density_score(routes_within_500m, _DENSITY_BANDS['route_access'])
     return {
         'score': _blend(d_score, den_score),
         'components': {'distance_score': d_score, 'density_score': den_score},
         'evidence': {
             'nearest_route_m': nearest_m,
             'nearest_route_name': route['route_name'],
-            'routes_within_300m': route['within_300m_count'],
+            'nearest_route_gu': route['gu'],
+            'routes_within_300m': routes_within_300m,
             'routes_within_500m': routes_within_500m,
-            'facility_count_300m': facility_count_300m,
         },
     }
 
 
 _SCORERS = {
-    'surveillance': _score_surveillance,
-    'lighting':     _score_lighting,
-    'emergency':    _score_emergency,
-    'policy':       _score_policy,
+    'surveillance':  _score_surveillance,
+    'lighting':      _score_lighting,
+    'emergency':     _score_emergency,
+    'safe_policy':   _score_safe_policy,
+    'route_access':  _score_route_access,
 }
 
 
@@ -240,10 +273,11 @@ def _recommended_action(category_scores: dict) -> str:
         return '주변 안전지원 인프라가 전반적으로 양호하므로 일반적인 야간 귀가 주의사항만 따르면 됩니다.'
 
     tips = {
-        'surveillance': '감시 인프라가 다소 부족한 구간이므로 야간에는 안심귀갓길이나 큰길 중심의 이동이 권장됩니다.',
-        'lighting':     '집 주변 조명 인프라가 상대적으로 낮게 나타나, 밤 시간대에는 조명이 많은 큰길 또는 안심귀갓길을 이용하는 것이 권장됩니다.',
-        'emergency':    '긴급 대응 인프라 접근성이 보완될 여지가 있어, 가장 가까운 안전비상벨·안심지킴이집 위치를 미리 확인해두는 것이 좋습니다.',
-        'policy':       '안심귀갓길 접근성이 다소 낮은 편이므로 야간 귀가 시 큰길 또는 조명이 많은 경로를 우선 이용하는 것이 권장됩니다.',
+        'surveillance':  '감시 인프라가 다소 부족한 구간이므로 야간에는 안심귀갓길이나 큰길 중심의 이동이 권장됩니다.',
+        'lighting':      '집 주변 조명 인프라가 상대적으로 낮게 나타나, 밤 시간대에는 조명이 많은 큰길 또는 안심귀갓길을 이용하는 것이 권장됩니다.',
+        'emergency':     '긴급 대응 인프라 접근성이 보완될 여지가 있어, 가장 가까운 안전비상벨·안심지킴이집 위치를 미리 확인해두는 것이 좋습니다.',
+        'safe_policy':   '안심귀갓길 시설물(안내표지판, CCTV 등)이 다소 부족한 편이므로 야간 귀가 시 주요 도로를 이용하는 것이 권장됩니다.',
+        'route_access':  '안심귀갓길 접근성이 다소 낮은 편이므로 야간 귀가 시 큰길 또는 조명이 많은 경로를 우선 이용하는 것이 권장됩니다.',
     }
     return tips.get(worst_key, '야간 귀가 시 큰길 중심의 이동이 권장됩니다.')
 

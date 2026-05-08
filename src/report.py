@@ -157,8 +157,10 @@ def _generate_with_template(score_result: dict) -> str:
         best_ev = f'반경 100m 내 가로등 {best["evidence"]["count_100m"]}개로 야간 조명 접근성이 양호합니다'
     elif best_key == 'emergency':
         best_ev = f'반경 300m 내 안전비상벨 {best["evidence"]["count_300m"]}개로 긴급 대응 인프라가 잘 갖추어져 있습니다'
-    else:  # policy
-        best_ev = f'가장 가까운 안심귀갓길({best["evidence"]["nearest_route_name"]})까지 {best["evidence"]["nearest_route_m"]:.0f}m로 정책 인프라 접근성이 양호합니다'
+    elif best_key == 'safe_policy':
+        best_ev = f'반경 300m 내 안심시설물 {best["evidence"]["facility_count_300m"]}개로 안심정책 인프라가 잘 갖추어져 있습니다'
+    else:  # route_access
+        best_ev = f'가장 가까운 안심귀갓길({best["evidence"]["nearest_route_name"]})까지 {best["evidence"]["nearest_route_m"]:.0f}m로 귀가 접근성이 양호합니다'
 
     # 보완점 evidence 문장
     if worst_key == 'surveillance':
@@ -167,8 +169,10 @@ def _generate_with_template(score_result: dict) -> str:
         worst_ev = f'반경 100m 내 가로등이 {worst["evidence"]["count_100m"]}개로 야간 조명 인프라가 보완이 필요합니다'
     elif worst_key == 'emergency':
         worst_ev = f'반경 300m 내 안전비상벨이 {worst["evidence"]["count_300m"]}개로 긴급 대응 인프라 접근성이 다소 낮은 편입니다'
-    else:  # policy
-        worst_ev = f'가장 가까운 안심귀갓길까지 {worst["evidence"]["nearest_route_m"]:.0f}m로 정책 인프라 접근성이 보완이 필요한 편입니다'
+    elif worst_key == 'safe_policy':
+        worst_ev = f'반경 300m 내 안심시설물이 {worst["evidence"]["facility_count_300m"]}개로 안심정책 인프라가 보완이 필요한 편입니다'
+    else:  # route_access
+        worst_ev = f'가장 가까운 안심귀갓길까지 {worst["evidence"]["nearest_route_m"]:.0f}m로 귀가 접근성이 보완이 필요한 편입니다'
 
     return (
         f'이 주소의 종합 안심 주거환경 점수는 {total}점으로 {grade} 등급에 해당합니다. '
