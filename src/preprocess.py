@@ -21,7 +21,7 @@ from scipy.spatial import cKDTree
 # 경로 / 상수
 # ─────────────────────────────────────────────────────────────────────────────
 
-PROJECT_ROOT = Path(r'C:\Users\pjhic\Projects\Seoul_bigdata')
+PROJECT_ROOT = Path(__file__).parent.parent
 RAW = PROJECT_ROOT / 'data' / 'raw'
 PROCESSED = PROJECT_ROOT / 'data' / 'processed'
 

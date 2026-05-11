@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+:root {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --secondary: #f59e0b;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --background: #f8fafc;
+  --foreground: #1e293b;
+  --card: #ffffff;
+  --muted: #64748b;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* 하단 네비게이션 여백 */
+.pb-nav {
+  padding-bottom: 80px;
+}
+
+/* 카카오맵 컨테이너 */
+.kakao-map {
+  width: 100%;
+  height: 100%;
+}
+
+/* 커스텀 스크롤바 */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+/* 아코디언 애니메이션 */
+.accordion-content {
+  overflow: hidden;
+  transition: max-height 0.3s ease-out;
+}
