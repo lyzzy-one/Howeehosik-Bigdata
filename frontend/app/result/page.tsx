@@ -12,7 +12,7 @@ declare global {
   }
 }
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://howeehosik-bigdata-production.up.railway.app';
 
 // 등급 계산
 function getGrade(score: number): { grade: string; color: string } {
